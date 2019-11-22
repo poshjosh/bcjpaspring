@@ -28,6 +28,7 @@ import com.bc.jpa.dao.functions.EntityManagerFactoryCreatorImpl;
 import com.bc.jpa.dao.sql.MySQLDateTimePatterns;
 import com.bc.jpa.dao.sql.SQLDateTimePatterns;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Properties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -36,11 +37,20 @@ import org.springframework.context.annotation.Scope;
 /**
  * @author Chinomso Bassey Ikwuagwu on Apr 9, 2019 11:31:20 AM
  */
-public abstract class JpaConfiguration {
+public class JpaConfiguration {
     
-    public abstract String getPersistenceUnitName();
+    private final String persistenceUnitName;
     
-    public abstract JdbcPropertiesProvider JdbcPropertiesProvider(ApplicationContext spring);
+    private final JdbcPropertiesProvider jdbcPropertiesProvider;
+
+    public JpaConfiguration(String persistenceUnitName, JdbcPropertiesProvider jdbcPropertiesProvider) {
+        this.persistenceUnitName = Objects.requireNonNull(persistenceUnitName);
+        this.jdbcPropertiesProvider = Objects.requireNonNull(jdbcPropertiesProvider);
+    }
+
+    @Bean @Scope("prototype") public JdbcPropertiesProvider jdbcPropertiesProvider(ApplicationContext spring) {
+        return jdbcPropertiesProvider;
+    }
     
     public SelectorFactory selectorFactory(ApplicationContext spring) {
         return (selectorName) -> Collections.EMPTY_LIST;
@@ -68,7 +78,7 @@ public abstract class JpaConfiguration {
     @Bean public JpaObjectFactory jpaObjectFactory(
             EntityManagerFactoryCreator emfCreator,
             SQLDateTimePatterns sqlDateTimePatterns) {
-        return new JpaObjectFactoryImpl(this.getPersistenceUnitName(), emfCreator, sqlDateTimePatterns);
+        return new JpaObjectFactoryImpl(getPersistenceUnitName(), emfCreator, sqlDateTimePatterns);
     }
     
     @Bean @Scope("prototype") public SQLDateTimePatterns sqlDateTimePatterns(JdbcPropertiesProvider jdbcPropertiesProvider) {
@@ -85,5 +95,9 @@ public abstract class JpaConfiguration {
                 return jdbcPropertiesProvider.apply(persistenceUnit); 
             }
         };
+    }
+
+    public String getPersistenceUnitName() {
+        return persistenceUnitName;
     }
 }

@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class TypeFromNameResolverUsingPersistenceXmlFile extends TypeFromNameResolverUsingClassNames{
 
     public TypeFromNameResolverUsingPersistenceXmlFile() {
-        super(new ClassesFromFromPersistenceXmlFileSupplier().get()
+        super(new ClassesFromPersistenceXmlFileSupplier().get()
                 .stream().map((clz) -> clz.getName()).collect(Collectors.toList()));
     }
 }

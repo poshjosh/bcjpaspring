@@ -32,11 +32,11 @@ import org.w3c.dom.NodeList;
 /**
  * @author Chinomso Bassey Ikwuagwu on Apr 6, 2019 3:55:57 PM
  */
-public class ClassesFromFromPersistenceXmlFileSupplier implements Supplier<List<Class>>{
+public class ClassesFromPersistenceXmlFileSupplier implements Supplier<List<Class>>{
 
-    private static final Logger LOG = LoggerFactory.getLogger(ClassesFromFromPersistenceXmlFileSupplier.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ClassesFromPersistenceXmlFileSupplier.class);
 
-    public ClassesFromFromPersistenceXmlFileSupplier() { }
+    public ClassesFromPersistenceXmlFileSupplier() { }
     
     @Override
     public List<Class> get() {
