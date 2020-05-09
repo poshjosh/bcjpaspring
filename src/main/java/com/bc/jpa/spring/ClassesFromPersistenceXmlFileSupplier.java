@@ -20,6 +20,7 @@ import com.bc.xml.DomReaderImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -40,9 +41,26 @@ public class ClassesFromPersistenceXmlFileSupplier implements Supplier<List<Clas
     
     @Override
     public List<Class> get() {
+        List<Class> output;
+        try {
+            
+            output = getClassesFromPersistenceFile("META-INF/persistence.xml");
+            
+        }catch(IOException e) {
+            
+            output = Collections.EMPTY_LIST;
+        }
+        
+        LOG.debug("Persistence classes: {}", output.stream()
+                .map((cls) -> cls.getName()).collect(Collectors.joining("\n")));
+
+        return output;
+    }
+
+    public List<Class> getClassesFromPersistenceFile(String resourcePath) throws IOException {
         
         try(final InputStream in = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream("META-INF/persistence.xml")) {
+                .getResourceAsStream(resourcePath)) {
         
             final Document doc = new DomReaderImpl().read(in);
 
@@ -72,10 +90,6 @@ public class ClassesFromPersistenceXmlFileSupplier implements Supplier<List<Clas
             LOG.debug("Persistence classes: {}", output.stream().map((cls) -> cls.getName()).collect(Collectors.joining("\n")));
 
             return output;
-            
-        }catch(IOException e) {
-            
-            throw new RuntimeException(e);
         }
     }
 }
