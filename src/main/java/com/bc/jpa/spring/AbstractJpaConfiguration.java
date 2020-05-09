@@ -18,7 +18,6 @@ package com.bc.jpa.spring;
 
 import com.bc.jpa.spring.repository.EntityRepositoryFactory;
 import com.bc.jpa.spring.repository.EntityRepositoryFactoryImpl;
-import com.bc.jpa.spring.selectors.SelectorFactory;
 import com.bc.db.meta.access.MetaDataAccess;
 import com.bc.db.meta.access.MetaDataAccessImpl;
 import com.bc.jpa.dao.JpaObjectFactory;
@@ -27,9 +26,8 @@ import com.bc.jpa.dao.functions.EntityManagerFactoryCreator;
 import com.bc.jpa.dao.functions.EntityManagerFactoryCreatorImpl;
 import com.bc.jpa.dao.sql.MySQLDateTimePatterns;
 import com.bc.jpa.dao.sql.SQLDateTimePatterns;
-import java.util.Collections;
-import java.util.Objects;
 import java.util.Properties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Scope;
@@ -37,24 +35,16 @@ import org.springframework.context.annotation.Scope;
 /**
  * @author Chinomso Bassey Ikwuagwu on Apr 9, 2019 11:31:20 AM
  */
-public class JpaConfiguration {
+public abstract class AbstractJpaConfiguration {
     
-    private final String persistenceUnitName;
-    
-    private final JdbcPropertiesProvider jdbcPropertiesProvider;
+    protected AbstractJpaConfiguration() { }
 
-    public JpaConfiguration(String persistenceUnitName, JdbcPropertiesProvider jdbcPropertiesProvider) {
-        this.persistenceUnitName = Objects.requireNonNull(persistenceUnitName);
-        this.jdbcPropertiesProvider = Objects.requireNonNull(jdbcPropertiesProvider);
-    }
-
-    @Bean @Scope("prototype") public JdbcPropertiesProvider jdbcPropertiesProvider(ApplicationContext spring) {
-        return jdbcPropertiesProvider;
+    @Bean @Scope("prototype") public JdbcPropertiesProvider jdbcPropertiesProvider(
+            @Autowired ApplicationContext spring) {
+        return new JdbcPropertiesProviderFromSpringProperties(spring.getEnvironment());
     }
     
-    public SelectorFactory selectorFactory(ApplicationContext spring) {
-        return (selectorName) -> Collections.EMPTY_LIST;
-    }
+    public abstract String getPersistenceUnitName();
     
     public String [] getEntityPackageNames() {
         return new String[0];
@@ -67,7 +57,7 @@ public class JpaConfiguration {
         );
     }
     
-    @Bean public EntityRepositoryFactory entityServiceProvider(JpaObjectFactory jpa) {
+    @Bean public EntityRepositoryFactory entityRepositoryFactory(JpaObjectFactory jpa) {
         return new EntityRepositoryFactoryImpl(jpa);
     }
     
@@ -81,7 +71,8 @@ public class JpaConfiguration {
         return new JpaObjectFactoryImpl(getPersistenceUnitName(), emfCreator, sqlDateTimePatterns);
     }
     
-    @Bean @Scope("prototype") public SQLDateTimePatterns sqlDateTimePatterns(JdbcPropertiesProvider jdbcPropertiesProvider) {
+    @Bean @Scope("prototype") public SQLDateTimePatterns sqlDateTimePatterns(
+            JdbcPropertiesProvider jdbcPropertiesProvider) {
         // @todo parse properties and determine if driver is: myql, postgresql etc
         // and then return the corresponding datetimepatterns object
         return new MySQLDateTimePatterns();
@@ -95,9 +86,5 @@ public class JpaConfiguration {
                 return jdbcPropertiesProvider.apply(persistenceUnit); 
             }
         };
-    }
-
-    public String getPersistenceUnitName() {
-        return persistenceUnitName;
     }
 }
