@@ -20,12 +20,12 @@ import com.bc.reflection.ReflectionUtil;
 /**
  * @author Chinomso Bassey Ikwuagwu on Apr 6, 2019 4:57:45 PM
  */
-public abstract class AbstractEntityTypeResolver implements TypeFromNameResolver{
+public abstract class AbstractTypeFromNameResolver implements TypeFromNameResolver{
 
     @Override
     public Class getType(String entityName) {
 
-        final Class type = getType(entityName, (Class)null);
+        final Class type = this.getType(entityName, (Class)null);
         
         if(type == null) {
             throw new RuntimeException("Failed to resolve name: " + 

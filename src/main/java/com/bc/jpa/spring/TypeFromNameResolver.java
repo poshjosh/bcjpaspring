@@ -23,6 +23,10 @@ import java.lang.reflect.InvocationTargetException;
  */
 public interface TypeFromNameResolver {
     
+    /**
+     * @param name whose declared type is to be returned
+     * @return the deduced type or throw {@link java.lang.NullPointerException}
+     */
     default Class getType(String name) {
 
         final Class type = getType(name, (Class)null);

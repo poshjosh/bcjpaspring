@@ -20,15 +20,13 @@ import com.bc.jpa.spring.repository.EntityRepositoryFactory;
 import com.bc.jpa.spring.repository.EntityRepositoryFactoryImpl;
 import com.bc.db.meta.access.MetaDataAccess;
 import com.bc.db.meta.access.MetaDataAccessImpl;
+import com.bc.db.meta.access.functions.GetConnectionFromEntityManager;
 import com.bc.jpa.dao.JpaObjectFactory;
-import com.bc.jpa.dao.JpaObjectFactoryImpl;
-import com.bc.jpa.dao.functions.EntityManagerFactoryCreator;
-import com.bc.jpa.dao.functions.EntityManagerFactoryCreatorImpl;
+import com.bc.jpa.dao.JpaObjectFactoryBase;
 import com.bc.jpa.dao.sql.MySQLDateTimePatterns;
 import com.bc.jpa.dao.sql.SQLDateTimePatterns;
-import java.util.Properties;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
+import java.util.Set;
+import javax.persistence.EntityManagerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Scope;
 
@@ -39,52 +37,62 @@ public abstract class AbstractJpaConfiguration {
     
     protected AbstractJpaConfiguration() { }
 
-    @Bean @Scope("prototype") public JdbcPropertiesProvider jdbcPropertiesProvider(
-            @Autowired ApplicationContext spring) {
-        return new JdbcPropertiesProviderFromSpringProperties(spring.getEnvironment());
-    }
+    public abstract EntityManagerFactory entityManagerFactory();
     
-    public abstract String getPersistenceUnitName();
-    
-    public String [] getEntityPackageNames() {
+    /**
+     * Use this to add additional packages to search for entity classes.
+     * That is, in addition to those specified in the
+     * {@link javax.persistence.EntityManagerFactory EntityManagerFactory} i.e
+     * the <tt>META-INF/persistence.xml</tt> file.
+     * @return 
+     */
+    public String [] getAdditionalEntityPackageNames() {
         return new String[0];
     }
 
-    @Bean @Scope("prototype") public TypeFromNameResolver entityTypeResolver() {
-        return new TypeFromNameResolverComposite(
-                new TypeFromNameResolverUsingPersistenceXmlFile(),
-                new TypeFromNameResolverUsingPackageNames(getEntityPackageNames())
-        );
+    @Bean @Scope("prototype") public TypeFromNameResolver typeFromNameResolver() {
+        final Set<Class> classes = this.domainClasses().get();
+        return new TypeFromNameResolverUsingClassNames(classes);
     }
     
-    @Bean public EntityRepositoryFactory entityRepositoryFactory(JpaObjectFactory jpa) {
-        return new EntityRepositoryFactoryImpl(jpa);
+    @Bean @Scope("prototype") public DomainClasses domainClasses() {
+        return this.domainClassesBuilder()
+                .reset()
+                .addFrom(this.entityManagerFactory())
+                .addFromPersistenceXmlFile()
+                .addFromPackages(this.getAdditionalEntityPackageNames())
+                .build();
+    }
+
+    @Bean @Scope("prototype") public DomainClassesBuilder domainClassesBuilder() {
+        return new DomainClasses.Builder();
     }
     
-    @Bean @Scope("prototype") public MetaDataAccess metaDataAccess(JpaObjectFactory jpa) {
-        return new MetaDataAccessImpl(jpa.getEntityManagerFactory());
+    @Bean @Scope("singleton") public EntityRepositoryFactory entityRepositoryFactory() {
+        return new EntityRepositoryFactoryImpl(
+                this.jpaObjectFactory(), this.metaDataAccess(), this.domainClasses());
     }
     
-    @Bean public JpaObjectFactory jpaObjectFactory(
-            EntityManagerFactoryCreator emfCreator,
-            SQLDateTimePatterns sqlDateTimePatterns) {
-        return new JpaObjectFactoryImpl(getPersistenceUnitName(), emfCreator, sqlDateTimePatterns);
+    @Bean @Scope("prototype") public MetaDataAccess metaDataAccess() {
+        return new MetaDataAccessImpl(
+                this.entityManagerFactory(), this.getConnectionFromEntityManager());
+    }
+
+    @Bean @Scope("prototype") public GetConnectionFromEntityManager 
+        getConnectionFromEntityManager() {
+        return new GetConnectionFromEntityManager();
     }
     
-    @Bean @Scope("prototype") public SQLDateTimePatterns sqlDateTimePatterns(
-            JdbcPropertiesProvider jdbcPropertiesProvider) {
+    @Bean @Scope("singleton") public JpaObjectFactory jpaObjectFactory() {
+        return new JpaObjectFactoryBase(
+                this.entityManagerFactory(), this.sqlDateTimePatterns());
+    }
+    
+    @Bean @Scope("prototype") public SQLDateTimePatterns sqlDateTimePatterns() {
+        
         // @todo parse properties and determine if driver is: myql, postgresql etc
         // and then return the corresponding datetimepatterns object
+//        final Map<String, Object> properties = this.entityManagerFactory().getProperties();
         return new MySQLDateTimePatterns();
-    }
-    
-    @Bean @Scope("prototype") public EntityManagerFactoryCreator entityManagerFactoryCreator(
-            JdbcPropertiesProvider jdbcPropertiesProvider) {
-        return new EntityManagerFactoryCreatorImpl(){
-            @Override
-            protected Properties getProperties(String persistenceUnit) {
-                return jdbcPropertiesProvider.apply(persistenceUnit); 
-            }
-        };
     }
 }

@@ -29,6 +29,10 @@ import javax.persistence.metamodel.Attribute;
 public interface EntityRepository<E> {
 
     String getTableName();
+    
+    long count();
+    
+    boolean hasRecords();
 
     List<E> search(String query);
 

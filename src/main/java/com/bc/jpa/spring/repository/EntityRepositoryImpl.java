@@ -17,7 +17,6 @@
 package com.bc.jpa.spring.repository;
 
 import com.bc.db.meta.access.MetaDataAccess;
-import com.bc.db.meta.access.MetaDataAccessImpl;
 import com.bc.jpa.dao.Dao;
 import com.bc.jpa.dao.Delete;
 import com.bc.jpa.dao.JpaObjectFactory;
@@ -56,19 +55,26 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     
     private final Class primaryColumnType;
 
-    public EntityRepositoryImpl(JpaObjectFactory jpa, Class<E> entityType) {
+    public EntityRepositoryImpl(
+            JpaObjectFactory jpa, MetaDataAccess mda, Class<E> entityType) {
+        LOG.debug("Entity type: {}", entityType);
         this.jpaObjectFactory = Objects.requireNonNull(jpa);
         this.entityType = Objects.requireNonNull(entityType);
+
         this.tableName = new GetTableNameFromAnnotation().apply(entityType);
-        final MetaDataAccess mda = new MetaDataAccessImpl(this.jpaObjectFactory.getEntityManagerFactory());
+        LOG.debug("Table name: {}", this.tableName);
+
         //@todo primary column may not be the first column
         final int primaryColumnIndex = 0;
         this.columnNames = mda.fetchStringMetaData(tableName, MetaDataAccess.COLUMN_NAME);
+        LOG.debug("Column names: {}", this.columnNames);
+
         this.primaryColumnName = columnNames.get(primaryColumnIndex);
+        LOG.debug("Primary column name: {}", this.primaryColumnName);
+
         final int idType = mda.fetchColumnDataTypes(tableName)[primaryColumnIndex];
         this.primaryColumnType = SQLUtils.getClass(idType, Object.class);
-        
-        LOG.debug("Entity type: {}, primary column type: {}", entityType, primaryColumnType);
+        LOG.debug("Primary column type: {}", this.primaryColumnType);
     }
 
     protected void preCreate(E entity){ }
@@ -78,6 +84,24 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     @Override
     public String getTableName() {
         return tableName;
+    }
+    
+    @Override
+    public long count() {
+        final Long count = jpaObjectFactory.getDaoForSelect(Long.class)
+                .from(entityType)
+                .count(this.primaryColumnName)
+                .getSingleResultAndClose();
+        return Objects.requireNonNull(count);
+    }
+    
+    @Override
+    public boolean hasRecords() {
+        final List results = jpaObjectFactory.getDaoForSelect(Object.class)
+                .from(entityType)
+                .select(this.primaryColumnName)
+                .getResultsAndClose(0, 1);
+        return results != null && ! results.isEmpty();
     }
     
     @Override
@@ -155,8 +179,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     public void create(E entity) {
         this.preCreate(entity);
         try(final Dao dao = jpaObjectFactory.getDao()) {
-            dao.begin().persist(entity);
-            dao.commit();
+            dao.begin().persist(entity).commit();
         }
     }
     

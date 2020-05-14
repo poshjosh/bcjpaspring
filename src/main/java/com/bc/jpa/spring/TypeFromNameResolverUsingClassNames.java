@@ -16,25 +16,44 @@
 
 package com.bc.jpa.spring;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.persistence.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Apr 6, 2019 4:56:21 PM
  */
-public class TypeFromNameResolverUsingClassNames extends AbstractEntityTypeResolver {
+public class TypeFromNameResolverUsingClassNames extends AbstractTypeFromNameResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(TypeFromNameResolverUsingClassNames.class);
 
-    private final List<String> classNames;
+    private final Collection<Class> classes;
 
-    public TypeFromNameResolverUsingClassNames(List<String> classNames) {
-        this.classNames = Objects.requireNonNull(classNames);
+    public TypeFromNameResolverUsingClassNames(Collection<String> classNames) {
         LOG.trace("Class names: {0}", classNames);
+        final List<Class> tmp = new ArrayList(classNames.size());
+        for(String className : classNames) {
+            try{
+                final Class cls = Class.forName(className);
+                if( ! tmp.contains(cls)) {
+                    tmp.add(cls);
+                }
+            }catch(ClassNotFoundException e) {
+                LOG.warn("Exception loading class: " + className, e);
+            }
+        }
+        this.classes = Collections.unmodifiableList(tmp);
+    }
+    
+    public TypeFromNameResolverUsingClassNames(Set<Class> classes) {
+        this.classes = Collections.unmodifiableSet(classes);
     }
     
     @Override
@@ -44,7 +63,7 @@ public class TypeFromNameResolverUsingClassNames extends AbstractEntityTypeResol
         
         if(type == null) {
             throw new RuntimeException("Failed to find class named: " + 
-                    entityName + ", in: " + this.classNames);
+                    entityName + ", in: " + this.classes);
         }
         
         return type;
@@ -53,27 +72,36 @@ public class TypeFromNameResolverUsingClassNames extends AbstractEntityTypeResol
     @Override
     public Class getType(String entityName, Class resultIfNone) {
         
-        final Set<String> foundNames = this.classNames.stream().filter((name) -> name.endsWith("." + entityName)).collect(Collectors.toSet());
+        final Predicate<Class> matchingClassName = (cls) ->
+                cls.getSimpleName().equalsIgnoreCase(entityName);
         
-        LOG.debug("For name: {}, found matching class names: {}", entityName, foundNames);
-        
-        final String typeName;
-        if(foundNames.isEmpty()) {
-            typeName = null;
-        }else if(foundNames.size() > 1) {
-            LOG.warn("For: {}, multiple class names found: {}", entityName, foundNames);
-            typeName = null;
-        }else{
-            typeName = foundNames.iterator().next();
-        }
-        Class output = null;
-        if(typeName != null) {
-            try{
-                output = Class.forName(typeName);
-            }catch(Exception e) {
-                LOG.warn("Exception loading: " + typeName, e);
+        final Predicate<Class> matchingTableName = (cls) -> {
+            final Table en = (Table)cls.getAnnotation(Table.class);
+            if(en == null) {
+                return false;
+            }else{
+                return en.name().equalsIgnoreCase(entityName);
             }
+        };    
+        
+        final Predicate<Class> filter = matchingClassName.or(matchingTableName);
+        
+        final Set<Class> found = this.classes.stream()
+                .filter(filter)
+                .collect(Collectors.toSet());
+        
+        LOG.debug("For name: {}, found matching classs: {}", entityName, found);
+        
+        final Class type;
+        if(found.isEmpty()) {
+            type = null;
+        }else if(found.size() > 1) {
+            LOG.warn("For: {}, multiple class names found: {}", entityName, found);
+            type = null;
+        }else{
+            type = found.iterator().next();
         }
-        return output == null ? resultIfNone : output;
+        
+        return type == null ? resultIfNone : type;
     }
 }

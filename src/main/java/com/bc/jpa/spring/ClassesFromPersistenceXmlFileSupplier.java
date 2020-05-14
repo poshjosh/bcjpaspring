@@ -16,80 +16,41 @@
 
 package com.bc.jpa.spring;
 
-import com.bc.xml.DomReaderImpl;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Apr 6, 2019 3:55:57 PM
  */
-public class ClassesFromPersistenceXmlFileSupplier implements Supplier<List<Class>>{
+public interface ClassesFromPersistenceXmlFileSupplier 
+        extends Supplier<List<Class>>, Function<String, List<Class>>{
 
-    private static final Logger LOG = LoggerFactory.getLogger(ClassesFromPersistenceXmlFileSupplier.class);
-
-    public ClassesFromPersistenceXmlFileSupplier() { }
+    @Override
+    default List<Class> get() {
+        
+        return this.apply("META-INF/persistence.xml");
+    }
     
     @Override
-    public List<Class> get() {
+    default List<Class> apply(String resourcePath) {
+    
         List<Class> output;
         try {
             
-            output = getClassesFromPersistenceFile("META-INF/persistence.xml");
+            output = get(resourcePath);
             
         }catch(IOException e) {
+            
+            e.printStackTrace();
             
             output = Collections.EMPTY_LIST;
         }
         
-        LOG.debug("Persistence classes: {}", output.stream()
-                .map((cls) -> cls.getName()).collect(Collectors.joining("\n")));
-
         return output;
     }
-
-    public List<Class> getClassesFromPersistenceFile(String resourcePath) throws IOException {
-        
-        try(final InputStream in = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream(resourcePath)) {
-        
-            final Document doc = new DomReaderImpl().read(in);
-
-            final NodeList nodeList = doc.getElementsByTagName("class");
-            
-            final List<Class> output = new ArrayList<>(nodeList.getLength());
-            
-            for(int i = 0; i< nodeList.getLength(); i++) {
-                
-                final Node clzNode = nodeList.item(i);
-                
-                final NodeList children = clzNode.getChildNodes();
-                
-                if(children.getLength() > 0) {
-                    
-                    final String className = children.item(0).getTextContent();
-                    
-                    try{
-                        final Class clz = Class.forName(className);
-                        output.add(clz);
-                    }catch(Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-            
-            LOG.debug("Persistence classes: {}", output.stream().map((cls) -> cls.getName()).collect(Collectors.joining("\n")));
-
-            return output;
-        }
-    }
+    
+    List<Class> get(String resourcePath) throws IOException;
 }
