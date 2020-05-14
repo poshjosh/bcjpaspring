@@ -16,9 +16,10 @@
 
 package com.bc.jpa.spring.repository;
 
+import com.bc.db.meta.access.MetaDataAccess;
 import com.bc.jpa.dao.JpaObjectFactory;
-import com.bc.jpa.dao.functions.GetTableNameFromAnnotation;
 import java.util.Objects;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,29 +30,81 @@ public class EntityRepositoryFactoryImpl implements EntityRepositoryFactory{
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityRepositoryFactoryImpl.class);
     
-    private final JpaObjectFactory jpa;
+    private final JpaObjectFactory jpaObjectFactory;
     
-    public EntityRepositoryFactoryImpl(JpaObjectFactory jpa) {
-        this.jpa = Objects.requireNonNull(jpa);
+    private final MetaDataAccess metaDataAccess;
+    
+    private final Predicate<Class> classTest;
+    
+    public EntityRepositoryFactoryImpl(
+            JpaObjectFactory jpa, MetaDataAccess mda, Predicate<Class> classTest) {
+        this.jpaObjectFactory = Objects.requireNonNull(jpa);
+        this.metaDataAccess = Objects.requireNonNull(mda);
+        this.classTest = Objects.requireNonNull(classTest);
     }
     
     @Override
     public boolean isSupported(Class entityType) {
-        try{
-            new GetTableNameFromAnnotation().apply(entityType);
-            return true;
-        }catch(RuntimeException ignored) {
-            LOG.trace("Failed to resolve table name from type: {}", entityType);
-            return false;
-        }
+        entityType = this.deduceActualDomainType(entityType);
+        return classTest.test(entityType);
     }
     
     @Override
     public EntityRepository forEntity(Class entityType) {
-        return new EntityRepositoryImpl(jpa, entityType);
+        entityType = this.deduceActualDomainType(entityType);
+        return new EntityRepositoryImpl(this.jpaObjectFactory, this.metaDataAccess, entityType);
+    }
+    
+    /**
+     * This method formats delegates of classes passed around by some 
+     * Persistence APIs to the actual class representing the domain type. 
+     * 
+     * <p>
+     * For example given domain type <code>com.domain.Person</code>
+     * some persistence APIs were observed to pass around types of format
+     * <code>com.domain.Person$HibernateProxy$uvcIsv</code>. 
+     * </p>
+     * Given argument of <code>com.domain.Person$HibernateProxy$uvcIsv</code>,
+     * this method return's <code>com.domain.Person</code>
+     * @param type
+     * @return 
+     */
+    private Class deduceActualDomainType(Class type) {
+        Class output = type;
+        while(output.isAnonymousClass()) {
+            final Class next = output.getEnclosingClass();
+            if(next == null || output.equals(next)) {
+                break;
+            }
+            output = next;
+        }
+        if(output != type) {
+            LOG.debug("Formatted {} to {}", type, output);
+        }
+        final String className = output.getName();
+        final int end = className.indexOf('$');
+        if(end > 0) {
+            final String newClassName = className.substring(0, end);
+            LOG.trace("Will attempt to use: {}", newClassName);
+            try{
+                output = Class.forName(newClassName);
+                LOG.debug("Formatted {} to {}", output, newClassName);
+            }catch(ClassNotFoundException e) {
+                LOG.warn(e.toString());
+            }
+        }
+        return output;
+    } 
+
+    public JpaObjectFactory getJpaObjectFactory() {
+        return jpaObjectFactory;
     }
 
-    public JpaObjectFactory getJpa() {
-        return jpa;
+    public MetaDataAccess getMetaDataAccess() {
+        return metaDataAccess;
+    }
+
+    public Predicate<Class> getClassTest() {
+        return classTest;
     }
 }
