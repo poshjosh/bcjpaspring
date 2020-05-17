@@ -22,10 +22,10 @@ import com.bc.jpa.dao.Delete;
 import com.bc.jpa.dao.JpaObjectFactory;
 import com.bc.jpa.dao.Select;
 import com.bc.jpa.dao.Update;
-import com.bc.jpa.dao.functions.GetTableNameFromAnnotation;
+import com.bc.jpa.dao.functions.GetColumnNames;
+import com.bc.jpa.dao.functions.GetTableName;
 import com.bc.jpa.dao.sql.SQLUtils;
-import java.util.Collection;
-import java.util.Date;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -45,36 +45,16 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
 
     private final JpaObjectFactory jpaObjectFactory;
     
+    private final MetaDataAccess metaDataAccess;
+    
     private final Class<E> entityType;
-    
-    private final String tableName;
-    
-    private final List<String> columnNames;
-            
-    private final String primaryColumnName;
-    
-    private final Class primaryColumnType;
 
     public EntityRepositoryImpl(
             JpaObjectFactory jpa, MetaDataAccess mda, Class<E> entityType) {
-        LOG.debug("Entity type: {}", entityType);
         this.jpaObjectFactory = Objects.requireNonNull(jpa);
         this.entityType = Objects.requireNonNull(entityType);
-
-        this.tableName = new GetTableNameFromAnnotation().apply(entityType);
-        LOG.debug("Table name: {}", this.tableName);
-
-        //@todo primary column may not be the first column
-        final int primaryColumnIndex = 0;
-        this.columnNames = mda.fetchStringMetaData(tableName, MetaDataAccess.COLUMN_NAME);
-        LOG.debug("Column names: {}", this.columnNames);
-
-        this.primaryColumnName = columnNames.get(primaryColumnIndex);
-        LOG.debug("Primary column name: {}", this.primaryColumnName);
-
-        final int idType = mda.fetchColumnDataTypes(tableName)[primaryColumnIndex];
-        this.primaryColumnType = SQLUtils.getClass(idType, Object.class);
-        LOG.debug("Primary column type: {}", this.primaryColumnType);
+        this.metaDataAccess = Objects.requireNonNull(mda);
+        LOG.debug("Entity type: {}", entityType);
     }
 
     protected void preCreate(E entity){ }
@@ -83,23 +63,25 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
 
     @Override
     public String getTableName() {
-        return tableName;
+        return this.getMetaData().getTableName();
     }
     
     @Override
     public long count() {
+        final String primaryColumnName = this.getMetaData().getPrimaryColumnName();
         final Long count = jpaObjectFactory.getDaoForSelect(Long.class)
                 .from(entityType)
-                .count(this.primaryColumnName)
+                .count(primaryColumnName)
                 .getSingleResultAndClose();
         return Objects.requireNonNull(count);
     }
     
     @Override
     public boolean hasRecords() {
+        final String primaryColumnName = this.getMetaData().getPrimaryColumnName();
         final List results = jpaObjectFactory.getDaoForSelect(Object.class)
                 .from(entityType)
-                .select(this.primaryColumnName)
+                .select(primaryColumnName)
                 .getResultsAndClose(0, 1);
         return results != null && ! results.isEmpty();
     }
@@ -117,35 +99,45 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
         LOG.debug("Id: {}, from entity: {}", id, entity);
         
         if(id == null) {
-        
-            final Object fromDb = jpaObjectFactory.getDao().merge(entity);
             
-            LOG.debug("Merged entity: {}", fromDb);
-            
-            id = getBeanIdValue(fromDb);
-
-            LOG.debug("Id: {}, from merged entity: {}", id, fromDb);
+            id = jpaObjectFactory.getEntityManagerFactory()
+                    .getPersistenceUnitUtil().getIdentifier(entity);
         }
         
-        if(id == null) {
+// Too costly and not necessary given PersistenceUnitUtil.getIdentifier is now used
+//
+//        if(id == null) {
+        
+//            final Object fromDb = jpaObjectFactory.getDao().merge(entity);
             
-            final Collection found = jpaObjectFactory.getTextSearch().searchEntityRecords(
-                    entity, Number.class, CharSequence.class, Date.class);
+//            LOG.debug("Merged entity: {}", fromDb);
             
-            if(found.size() == 1) {
-                
-                final Object obj = found.iterator().next();
-                
-                id = getBeanIdValue(obj);
+//            id = getBeanIdValue(fromDb);
 
-                LOG.debug("Id: {}, from searched entity: {}", id, obj);
-            }
-        }
+//            LOG.debug("Id: {}, from merged entity: {}", id, fromDb);
+//        }
+        
+//        if(id == null) {
+            
+//            final Collection found = jpaObjectFactory.getTextSearch().searchEntityRecords(
+//                    entity, Number.class, CharSequence.class, Date.class);
+            
+//            if(found.size() == 1) {
+                
+//                final Object obj = found.iterator().next();
+                
+//                id = getBeanIdValue(obj);
+
+//                LOG.debug("Id: {}, from searched entity: {}", id, obj);
+//            }
+//        }
         
         return Optional.ofNullable(id);
     }
     
     public Object getBeanIdValue(Object entity) {
+        
+        final String primaryColumnName = this.getMetaData().getPrimaryColumnName();
 
         final BeanWrapper bean = PropertyAccessorFactory.forBeanPropertyAccess(entity);
 
@@ -253,6 +245,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     
     private Object toPrimaryColumnType(Object id) {
         final Object result;
+        final Class primaryColumnType = this.getMetaData().getPrimaryColumnType();
         if(primaryColumnType.equals(Short.class)) {
             if(id instanceof Short) {
                 result = (Short)id;
@@ -303,7 +296,54 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
         return entityType;
     }
 
-    public Class getPrimaryColumnType() {
-        return primaryColumnType;
+    private MetaData<E> _meta;
+    private MetaData<E> getMetaData() {
+        if(_meta == null) {
+            _meta = new MetaData(this.metaDataAccess, this.entityType);
+        }
+        return _meta;
+    }
+
+    private static class MetaData<E> implements Serializable{
+        
+        private final String tableName;
+        private final List<String> columnNames;
+        private final String primaryColumnName;
+        private final Class primaryColumnType;
+        
+        private MetaData(MetaDataAccess mda, Class<E> entityType) {
+            LOG.debug("Entity type: {}", entityType);
+
+            this.tableName = new GetTableName(mda).apply(entityType);
+            LOG.debug("Table name: {}", this.tableName);
+
+            //@todo primary column may not be the first column
+            final int primaryColumnIndex = 0;
+            this.columnNames = new GetColumnNames(mda).apply(this.tableName);
+            LOG.debug("Column names: {}", this.columnNames);
+
+            this.primaryColumnName = columnNames.get(primaryColumnIndex);
+            LOG.debug("Primary column name: {}", this.primaryColumnName);
+
+            final int idType = mda.fetchColumnDataTypes(tableName)[primaryColumnIndex];
+            this.primaryColumnType = SQLUtils.getClass(idType, Object.class);
+            LOG.debug("Primary column type: {}", this.primaryColumnType);
+        }
+
+        public String getTableName() {
+            return tableName;
+        }
+
+        public List<String> getColumnNames() {
+            return columnNames;
+        }
+
+        public String getPrimaryColumnName() {
+            return primaryColumnName;
+        }
+
+        public Class getPrimaryColumnType() {
+            return primaryColumnType;
+        }
     }
 }
