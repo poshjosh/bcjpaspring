@@ -16,13 +16,40 @@
 
 package com.bc.jpa.spring;
 
-import java.lang.reflect.InvocationTargetException;
+import java.util.Optional;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Apr 6, 2019 3:03:11 PM
  */
 public interface TypeFromNameResolver {
     
+    default Optional<Object> newInstanceOptional(String name) {
+        final Object instance = this.newInstance(name, null);
+        return Optional.ofNullable(instance);
+    }
+
+    default Object newInstance(String name) {
+        final Object instance = this.newInstance(name, null);
+        if(instance == null) {
+            throw new RuntimeException("Failed to resolve name: " + 
+                    name + ", to a Class");
+        }
+        return instance;
+    }
+    
+    default Object newInstance(String name, Object resultIfNone) {
+        final Class type = getType(name, null);
+        return type == null ? resultIfNone : newInstance(type);
+    }
+
+    default Object newInstance(Class type) {
+        try{
+            return type.newInstance();
+        }catch(IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * @param name whose declared type is to be returned
      * @return the deduced type or throw {@link java.lang.NullPointerException}
@@ -39,22 +66,16 @@ public interface TypeFromNameResolver {
         return type;
     }
     
-    Class getType(String name, Class resultIfNone);
+    default Optional<Class> getTypeOptional(String name) {
 
-    default Object newInstance(String name) {
-        return newInstance(TypeFromNameResolver.this.getType(name)); 
+        final Class type = getType(name, (Class)null);
+        
+        return Optional.ofNullable(type);
     }
 
+    Class getType(String name, Class resultIfNone);
+    
     default String getName(Class type) {
         return type.getSimpleName();
-    }
-
-    default Object newInstance(Class type) {
-        try{
-            return type.getConstructor().newInstance();
-        }catch(NoSuchMethodException | SecurityException | InstantiationException | 
-                IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
