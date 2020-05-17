@@ -55,10 +55,5 @@
             <artifactId>bcjpadao</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>bcdbmetaaccess</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
 </project>
