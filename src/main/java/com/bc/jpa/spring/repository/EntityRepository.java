@@ -77,13 +77,7 @@ public interface EntityRepository<E> {
     
     List<E> findAll(int offset, int limit);
     
-    default E find(Object id) throws EntityNotFoundException {
-        final E found = findOrDefault(id, null);
-        if(found == null) {
-            throw new EntityNotFoundException("Entity with id: " + id + ", not found");
-        }
-        return found;
-    }
+    E find(Object id) throws EntityNotFoundException;
 
     E findOrDefault(Object id, E resultIfNone);
     
