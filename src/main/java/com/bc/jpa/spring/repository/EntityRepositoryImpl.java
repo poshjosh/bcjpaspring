@@ -150,7 +150,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     @Override
     public boolean exists(Object id) {
         try{
-            final Object found = jpaObjectFactory.getDao().find(entityType, id);
+            final Object found = getDao().find(entityType, id);
             return found != null;
         }catch(NonUniqueResultException ignored) {
             return true;
@@ -170,11 +170,34 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     @Override
     public void create(E entity) {
         this.preCreate(entity);
-        try(final Dao dao = jpaObjectFactory.getDao()) {
+        try(final Dao dao = getDao()) {
             dao.begin().persist(entity).commit();
         }
     }
     
+    @Override
+    public void deleteManagedEntity(E entity) {
+        this.getDao().removeAndClose(entity);
+    }
+
+    @Override
+    public void deleteById(Object id) {
+// This will fail with message: 
+// java.lang.IllegalArgumentException: Entity must be managed to call remove: 
+// try merging the detached and try the remove again.        
+//
+// So we use the same Dao to find and then delete the entity
+//        final Object found = this.find(id);
+//        this.getDao().removeAndClose(found);
+        try(final Dao dao = this.getDao()) {
+            dao.begin();
+            final Object found = dao.find(entityType, toPrimaryColumnType(id));
+            this.requireNotNull(found, id);
+            dao.remove(found);
+            dao.commit();
+        }
+    }
+
     @Override
     public List<E> findAllBy(String key, Object value) {
         return jpaObjectFactory.getDaoForSelect(entityType)
@@ -219,28 +242,16 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
 
     @Override
     public E find(Object id) throws EntityNotFoundException {
-        final E found = (E)jpaObjectFactory.getDaoForSelect(entityType).find(entityType, toPrimaryColumnType(id));
-        if(found == null) {
-            throw new EntityNotFoundException("Not found. " + entityType.getName() + " with id: " + id);
-        }
-        return found;
-    }
-
-    @Override
-    public void deleteById(Object id) {
-        final Dao dao = jpaObjectFactory.getDao();
-        dao.removeAndClose(dao.find(entityType, toPrimaryColumnType(id)));
-    }
-
-    @Override
-    public void deleteManagedEntity(E entity) {
-        jpaObjectFactory.getDao().removeAndClose(entity);
+        final Dao dao = this.getDao();
+        final Object found = dao.begin().findAndClose(entityType, toPrimaryColumnType(id));
+        this.requireNotNull(found, id);;
+        return (E)found;
     }
 
     @Override
     public void update(E entity) {
         this.preUpdate(entity);
-        jpaObjectFactory.getDao().mergeAndClose(entity);
+        this.getDao().mergeAndClose(entity);
     }
     
     private Object toPrimaryColumnType(Object id) {
@@ -271,6 +282,10 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
         }
         return result;
     }
+    
+    public Dao getDao() {
+        return jpaObjectFactory.getDao();
+    }
 
     public Select<E> getDaoForSelect() {
         return jpaObjectFactory.getDaoForSelect(entityType).from(entityType);
@@ -295,6 +310,18 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     public Class getEntityType() {
         return entityType;
     }
+    
+    public void requireNotNull(Object entity, Object id) 
+            throws EntityNotFoundException{
+        if(entity == null) {
+            throw this.getNotFoundException(id);
+        }
+    }
+    
+    public EntityNotFoundException getNotFoundException(Object id) {
+         return new EntityNotFoundException("Not found. " + 
+                 entityType.getName() + " with id: " + id);
+    }
 
     private MetaData<E> _meta;
     private MetaData<E> getMetaData() {
@@ -312,22 +339,23 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
         private final Class primaryColumnType;
         
         private MetaData(MetaDataAccess mda, Class<E> entityType) {
-            LOG.debug("Entity type: {}", entityType);
+            LOG.trace("Entity type: {}", entityType);
 
             this.tableName = new GetTableName(mda).apply(entityType);
-            LOG.debug("Table name: {}", this.tableName);
+            LOG.trace("Table name: {}", this.tableName);
 
             //@todo primary column may not be the first column
             final int primaryColumnIndex = 0;
             this.columnNames = new GetColumnNames(mda).apply(this.tableName);
-            LOG.debug("Column names: {}", this.columnNames);
+            LOG.debug("Entity: {}, table: {}, columns: {}", 
+                    entityType.getName(), this.tableName, this.columnNames);
 
             this.primaryColumnName = columnNames.get(primaryColumnIndex);
-            LOG.debug("Primary column name: {}", this.primaryColumnName);
+            LOG.trace("Primary column name: {}", this.primaryColumnName);
 
             final int idType = mda.fetchColumnDataTypes(tableName)[primaryColumnIndex];
             this.primaryColumnType = SQLUtils.getClass(idType, Object.class);
-            LOG.debug("Primary column type: {}", this.primaryColumnType);
+            LOG.trace("Primary column type: {}", this.primaryColumnType);
         }
 
         public String getTableName() {
