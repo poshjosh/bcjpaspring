@@ -16,10 +16,14 @@
 
 package com.bc.jpa.spring.repository;
 
+import javax.persistence.EntityManagerFactory;
+
 /**
  * @author Chinomso Bassey Ikwuagwu on Apr 6, 2019 2:04:27 PM
  */
 public interface EntityRepositoryFactory {
+
+    EntityManagerFactory getEntityManagerFactory();
     
     boolean isSupported(Class entityType);
     

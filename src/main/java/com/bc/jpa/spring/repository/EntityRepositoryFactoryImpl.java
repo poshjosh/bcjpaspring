@@ -20,6 +20,7 @@ import com.bc.db.meta.access.MetaDataAccess;
 import com.bc.jpa.dao.JpaObjectFactory;
 import java.util.Objects;
 import java.util.function.Predicate;
+import javax.persistence.EntityManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +42,11 @@ public class EntityRepositoryFactoryImpl implements EntityRepositoryFactory{
         this.jpaObjectFactory = Objects.requireNonNull(jpa);
         this.metaDataAccess = Objects.requireNonNull(mda);
         this.classTest = Objects.requireNonNull(classTest);
+    }
+
+    @Override
+    public EntityManagerFactory getEntityManagerFactory() {
+        return jpaObjectFactory.getEntityManagerFactory();
     }
     
     @Override
