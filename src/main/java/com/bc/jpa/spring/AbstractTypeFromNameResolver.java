@@ -47,6 +47,10 @@ public abstract class AbstractTypeFromNameResolver implements TypeFromNameResolv
     
     @Override
     public Object newInstance(Class entityType) {
-        return new ReflectionUtil().newInstance(entityType);
+        try{
+            return entityType.newInstance();
+        }catch(IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
