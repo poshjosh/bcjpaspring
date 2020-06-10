@@ -28,6 +28,8 @@ import javax.persistence.metamodel.Attribute;
  */
 public interface EntityRepository<E> {
 
+    Class getEntityType();
+    
     String getTableName();
     
     long count();

@@ -307,6 +307,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
         return jpaObjectFactory;
     }
 
+    @Override
     public Class getEntityType() {
         return entityType;
     }
