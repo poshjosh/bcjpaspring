@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.PropertyAccessorFactory;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Apr 6, 2019 1:54:23 PM
@@ -67,6 +68,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
     
     @Override
+    @Transactional(readOnly = true)
     public long count() {
         final String primaryColumnName = this.getMetaData().getPrimaryColumnName();
         final Long count = jpaObjectFactory.getDaoForSelect(Long.class)
@@ -77,6 +79,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
     
     @Override
+    @Transactional(readOnly = true)
     public boolean hasRecords() {
         final String primaryColumnName = this.getMetaData().getPrimaryColumnName();
         final List results = jpaObjectFactory.getDaoForSelect(Object.class)
@@ -87,6 +90,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
     
     @Override
+    @Transactional(readOnly = true)
     public List<E> search(String query) {
         return jpaObjectFactory.getTextSearch().search(entityType, query);
     }
@@ -148,6 +152,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean exists(Object id) {
         try{
             final Object found = getDao().find(entityType, id);
@@ -160,6 +165,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean existsBy(String name, Object value) {
         final List found = jpaObjectFactory.getDaoForSelect(value.getClass())
                 .where(entityType, name, value)
@@ -168,6 +174,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
 
     @Override
+    @Transactional
     public void create(E entity) {
         this.preCreate(entity);
         try(final Dao dao = getDao()) {
@@ -176,11 +183,13 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
     
     @Override
+    @Transactional
     public void deleteManagedEntity(E entity) {
         this.getDao().removeAndClose(entity);
     }
 
     @Override
+    @Transactional
     public void deleteById(Object id) {
 // This will fail with message: 
 // java.lang.IllegalArgumentException: Entity must be managed to call remove: 
@@ -199,12 +208,14 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<E> findAllBy(String key, Object value) {
         return jpaObjectFactory.getDaoForSelect(entityType)
                 .where(key, value).distinct(true).getResultsAndClose();
     }
     
     @Override
+    @Transactional(readOnly = true)
     public List<E> findAllBy(String key, Object value, int offset, int limit) {
         return jpaObjectFactory.getDaoForSelect(entityType)
                 .where(key, value).distinct(true)
@@ -212,24 +223,28 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public E findSingleBy(String key, Object value) {
         return jpaObjectFactory.getDaoForSelect(entityType)
                 .where(key, value).distinct(true).getSingleResultAndClose();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<E> findAll() {
         return jpaObjectFactory.getDaoForSelect(entityType)
                 .distinct(true).findAllAndClose(entityType);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<E> findAll(int offset, int limit) {
         return jpaObjectFactory.getDaoForSelect(entityType)
                 .distinct(true).findAllAndClose(entityType, offset, limit);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public E findOrDefault(Object id, E resultIfNone) {
         E found;
         try{
@@ -241,6 +256,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public E find(Object id) throws EntityNotFoundException {
         final Dao dao = this.getDao();
         final Object found = dao.begin().findAndClose(entityType, toPrimaryColumnType(id));
@@ -249,6 +265,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
 
     @Override
+    @Transactional
     public void update(E entity) {
         this.preUpdate(entity);
         this.getDao().mergeAndClose(entity);

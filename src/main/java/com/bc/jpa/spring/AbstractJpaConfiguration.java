@@ -69,10 +69,15 @@ public abstract class AbstractJpaConfiguration {
     }
     
     @Bean @Scope("singleton") public EntityRepositoryFactory entityRepositoryFactory() {
-        return new EntityRepositoryFactoryImpl(
+        return entityRepositoryFactory(
                 this.jpaObjectFactory(), this.metaDataAccess(), this.domainClasses());
     }
     
+    public EntityRepositoryFactory entityRepositoryFactory(
+            JpaObjectFactory jpa, MetaDataAccess meta, DomainClasses domainClasses) {
+        return new EntityRepositoryFactoryImpl(jpa, meta, domainClasses);
+    }
+
     @Bean @Scope("prototype") public MetaDataAccess metaDataAccess() {
         return new MetaDataAccessImpl(
                 this.entityManagerFactory(), this.getConnectionFromEntityManager());
