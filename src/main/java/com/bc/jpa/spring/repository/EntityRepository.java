@@ -36,8 +36,6 @@ public interface EntityRepository<E> {
     
     boolean hasRecords();
 
-    List<E> search(String query);
-
     Optional getIdOptional(Object entity);
         
     void create(E entity);
@@ -88,4 +86,6 @@ public interface EntityRepository<E> {
     void deleteManagedEntity(E entity);
 
     void update(E entity);
+
+    List<E> search(String query);
 }
