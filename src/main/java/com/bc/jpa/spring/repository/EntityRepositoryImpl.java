@@ -40,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * @author Chinomso Bassey Ikwuagwu on Apr 6, 2019 1:54:23 PM
  */
+@Transactional(readOnly = true)
 public class EntityRepositoryImpl<E> implements EntityRepository<E> {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityRepositoryImpl.class);
@@ -68,7 +69,6 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
     
     @Override
-    @Transactional(readOnly = true)
     public long count() {
         final String primaryColumnName = this.getMetaData().getPrimaryColumnName();
         final Long count = jpaObjectFactory.getDaoForSelect(Long.class)
@@ -79,7 +79,6 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
     
     @Override
-    @Transactional(readOnly = true)
     public boolean hasRecords() {
         final String primaryColumnName = this.getMetaData().getPrimaryColumnName();
         final List results = jpaObjectFactory.getDaoForSelect(Object.class)
@@ -90,7 +89,6 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
     
     @Override
-    @Transactional(readOnly = true)
     public List<E> search(String query) {
         return jpaObjectFactory.getTextSearch().search(entityType, query);
     }
@@ -108,34 +106,6 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
                     .getPersistenceUnitUtil().getIdentifier(entity);
         }
         
-// Too costly and not necessary given PersistenceUnitUtil.getIdentifier is now used
-//
-//        if(id == null) {
-        
-//            final Object fromDb = jpaObjectFactory.getDao().merge(entity);
-            
-//            LOG.debug("Merged entity: {}", fromDb);
-            
-//            id = getBeanIdValue(fromDb);
-
-//            LOG.debug("Id: {}, from merged entity: {}", id, fromDb);
-//        }
-        
-//        if(id == null) {
-            
-//            final Collection found = jpaObjectFactory.getTextSearch().searchEntityRecords(
-//                    entity, Number.class, CharSequence.class, Date.class);
-            
-//            if(found.size() == 1) {
-                
-//                final Object obj = found.iterator().next();
-                
-//                id = getBeanIdValue(obj);
-
-//                LOG.debug("Id: {}, from searched entity: {}", id, obj);
-//            }
-//        }
-        
         return Optional.ofNullable(id);
     }
     
@@ -152,10 +122,9 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean exists(Object id) {
         try{
-            final Object found = getDao().find(entityType, id);
+            final Object found = getDao().findAndClose(entityType, id);
             return found != null;
         }catch(NonUniqueResultException ignored) {
             return true;
@@ -165,7 +134,6 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean existsBy(String name, Object value) {
         final List found = jpaObjectFactory.getDaoForSelect(value.getClass())
                 .where(entityType, name, value)
@@ -208,14 +176,12 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<E> findAllBy(String key, Object value) {
         return jpaObjectFactory.getDaoForSelect(entityType)
                 .where(key, value).distinct(true).getResultsAndClose();
     }
     
     @Override
-    @Transactional(readOnly = true)
     public List<E> findAllBy(String key, Object value, int offset, int limit) {
         return jpaObjectFactory.getDaoForSelect(entityType)
                 .where(key, value).distinct(true)
@@ -223,28 +189,24 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public E findSingleBy(String key, Object value) {
         return jpaObjectFactory.getDaoForSelect(entityType)
                 .where(key, value).distinct(true).getSingleResultAndClose();
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<E> findAll() {
         return jpaObjectFactory.getDaoForSelect(entityType)
                 .distinct(true).findAllAndClose(entityType);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<E> findAll(int offset, int limit) {
         return jpaObjectFactory.getDaoForSelect(entityType)
                 .distinct(true).findAllAndClose(entityType, offset, limit);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public E findOrDefault(Object id, E resultIfNone) {
         E found;
         try{
@@ -256,11 +218,10 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public E find(Object id) throws EntityNotFoundException {
         final Dao dao = this.getDao();
         final Object found = dao.begin().findAndClose(entityType, toPrimaryColumnType(id));
-        this.requireNotNull(found, id);;
+        this.requireNotNull(found, id);
         return (E)found;
     }
 
