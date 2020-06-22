@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.bc.jpa.spring.repository;
 
 import com.bc.db.meta.access.MetaDataAccess;
@@ -25,16 +24,18 @@ import com.bc.jpa.dao.Update;
 import com.bc.jpa.dao.functions.GetColumnNames;
 import com.bc.jpa.dao.functions.GetTableName;
 import com.bc.jpa.dao.sql.SQLUtils;
+import com.bc.jpa.spring.ConvertToType;
+import com.bc.jpa.spring.EntityIdAccessor;
+import com.bc.jpa.spring.EntityIdAccessorImpl;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.NonUniqueResultException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanWrapper;
-import org.springframework.beans.PropertyAccessorFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -95,36 +96,13 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     
     @Override
     public Optional getIdOptional(Object entity) {
-
-        Object id = getBeanIdValue(entity);
-        
-        LOG.debug("Id: {}, from entity: {}", id, entity);
-        
-        if(id == null) {
-            
-            id = jpaObjectFactory.getEntityManagerFactory()
-                    .getPersistenceUnitUtil().getIdentifier(entity);
-        }
-        
-        return Optional.ofNullable(id);
-    }
-    
-    public Object getBeanIdValue(Object entity) {
-        
-        final String primaryColumnName = this.getMetaData().getPrimaryColumnName();
-
-        final BeanWrapper bean = PropertyAccessorFactory.forBeanPropertyAccess(entity);
-
-        final Object id = bean.isReadableProperty(primaryColumnName)
-                ? bean.getPropertyValue(primaryColumnName) : null;
-        
-        return id;
+        return this.getIdAccessor().getValueOptional(entity);
     }
 
     @Override
     public boolean exists(Object id) {
         try{
-            final Object found = getDao().findAndClose(entityType, id);
+            final Object found = this.find(id);
             return found != null;
         }catch(NonUniqueResultException ignored) {
             return true;
@@ -168,7 +146,8 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
 //        this.getDao().removeAndClose(found);
         try(final Dao dao = this.getDao()) {
             dao.begin();
-            final Object found = dao.find(entityType, toPrimaryColumnType(id));
+            id = this.convertToIdTypeIfNeed(id);
+            final Object found = dao.find(entityType, id);
             this.requireNotNull(found, id);
             dao.remove(found);
             dao.commit();
@@ -220,7 +199,8 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     @Override
     public E find(Object id) throws EntityNotFoundException {
         final Dao dao = this.getDao();
-        final Object found = dao.begin().findAndClose(entityType, toPrimaryColumnType(id));
+        final Object found = dao.begin()
+                .findAndClose(entityType, this.convertToIdTypeIfNeed(id));
         this.requireNotNull(found, id);
         return (E)found;
     }
@@ -230,35 +210,6 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     public void update(E entity) {
         this.preUpdate(entity);
         this.getDao().mergeAndClose(entity);
-    }
-    
-    private Object toPrimaryColumnType(Object id) {
-        final Object result;
-        final Class primaryColumnType = this.getMetaData().getPrimaryColumnType();
-        if(primaryColumnType.equals(Short.class)) {
-            if(id instanceof Short) {
-                result = (Short)id;
-            }else{
-                result = Short.parseShort(id.toString());
-            }
-        }else if(primaryColumnType.equals(Integer.class)) {
-            if(id instanceof Integer) {
-                result = (Integer)id;
-            }else{
-                result = Integer.parseInt(id.toString());
-            }
-        }else if(primaryColumnType.equals(Long.class)) {
-            if(id instanceof Long) {
-                result = (Long)id;
-            }else{
-                result = Long.parseLong(id.toString());
-            }
-        }else if(primaryColumnType.equals(String.class)) {
-            result = id.toString();
-        }else{
-            result = id;
-        }
-        return result;
     }
     
     public Dao getDao() {
@@ -301,7 +252,42 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
          return new EntityNotFoundException("Not found. " + 
                  entityType.getName() + " with id: " + id);
     }
+    
+    public Object convertToIdTypeIfNeed(Object id) {
+        if( ! this.getPrimaryColumnType().isAssignableFrom(id.getClass())) {
+            id = this.getConvertToType().convert(id);
+        }
+        return id;
+    }
+    
+    public String getPrimaryColumnName() {
+        return this.getIdAccessor().getName(entityType);
+    }
+    
+    public Class getPrimaryColumnType() {
+        return this.getIdAccessor().getType(entityType);
+    }
+    
+    private EntityIdAccessor _eia;
+    private EntityIdAccessor getIdAccessor() {
+        if(_eia == null) {
+            _eia = new EntityIdAccessorImpl(this.getEntityManagerFactory());
+        }
+        return _eia;
+    }
+    
+    private ConvertToType _c2t;
+    private ConvertToType getConvertToType() {
+        if(_c2t == null) {
+            _c2t = new ConvertToType(getMetaData().getPrimaryColumnType());
+        }
+        return _c2t;
+    }
 
+    public EntityManagerFactory getEntityManagerFactory() {
+        return this.getJpaObjectFactory().getEntityManagerFactory();
+    }
+    
     private MetaData<E> _meta;
     private MetaData<E> getMetaData() {
         if(_meta == null) {
