@@ -23,12 +23,14 @@ public class EntityIdAccessorImpl<E, ID> implements EntityIdAccessor<E, ID>{
     
     @Override
     public Class<ID> getType(Class<E> entityType) {
+        entityType = JpaUtil.deduceActualDomainType(entityType);
         return (Class<ID>)metamodel.entity(entityType).getIdType().getJavaType();
     }
     
     
     @Override
     public String getName(Class<E> entityType) {
+        entityType = JpaUtil.deduceActualDomainType(entityType);
         final String idName = metamodel
                 .entity(entityType)
                 .getId(Object.class).getName();
@@ -38,7 +40,9 @@ public class EntityIdAccessorImpl<E, ID> implements EntityIdAccessor<E, ID>{
     @Override
     public ID getValueOrDefault(E entity, ID resultIfNone) {
         
-        final String name = this.getName((Class<E>)entity.getClass());
+        final Class entityType = JpaUtil.deduceActualDomainType(entity.getClass());
+
+        final String name = this.getName((Class<E>)entityType);
         
         ID value = this.getBeanIdValue(entity, name);
         

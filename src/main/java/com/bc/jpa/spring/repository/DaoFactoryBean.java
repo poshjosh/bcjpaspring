@@ -1,6 +1,7 @@
 package com.bc.jpa.spring.repository;
 
 import com.bc.jpa.dao.JpaObjectFactory;
+import com.bc.jpa.spring.JpaUtil;
 import java.io.Serializable;
 import java.util.Objects;
 import javax.persistence.EntityManager;
@@ -45,7 +46,9 @@ public class DaoFactoryBean<R extends JpaRepository<E, ID>, E,
         @Override
         protected JpaRepositoryImplementation<?, ?> getTargetRepository(
                 RepositoryInformation metadata, EntityManager entityManager) {
-            return new DaoImpl<E, ID>(jpaObjectFactory, entityManager, (Class<E>) metadata.getDomainType());
+            Class<E> domainType = (Class<E>) metadata.getDomainType();
+            domainType = JpaUtil.deduceActualDomainType(domainType);            
+            return new DaoImpl<E, ID>(jpaObjectFactory, entityManager, domainType);
         }
  
         @Override
