@@ -16,6 +16,9 @@ public class JpaUtil {
      * This method formats delegates of classes passed around by some 
      * Persistence APIs to the actual class representing the domain type. 
      * 
+     * We could use {@link org.hibernate.Hibernate#unproxy(java.lang.Object)}.
+     * However we are working with a class, as opposed to an instance.
+     * 
      * <p>
      * For example given domain type <code>com.domain.Person</code>
      * some persistence APIs were observed to pass around types of format
