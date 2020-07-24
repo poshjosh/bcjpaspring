@@ -25,6 +25,8 @@ import com.bc.jpa.dao.JpaObjectFactory;
 import com.bc.jpa.dao.JpaObjectFactoryBase;
 import com.bc.jpa.dao.sql.MySQLDateTimePatterns;
 import com.bc.jpa.dao.sql.SQLDateTimePatterns;
+import com.bc.jpa.spring.repository.JpaRepositoryFactory;
+import com.bc.jpa.spring.repository.JpaRepositoryFactoryImpl;
 import java.util.Set;
 import javax.persistence.EntityManagerFactory;
 import org.springframework.context.annotation.Bean;
@@ -52,9 +54,13 @@ public abstract class AbstractJpaConfiguration {
 
     @Bean @Scope("prototype") public TypeFromNameResolver typeFromNameResolver() {
         final Set<Class> classes = this.domainClasses().get();
-        return new TypeFromNameResolverUsingClassNames(classes);
+        return this.typeFromNameResolver(classes);
     }
     
+    public TypeFromNameResolver typeFromNameResolver(Set<Class> classes) {
+        return new TypeFromNameResolverUsingClassNames(classes);
+    }
+
     @Bean @Scope("prototype") public DomainClasses domainClasses() {
         return this.domainClassesBuilder()
                 .reset()
@@ -66,6 +72,15 @@ public abstract class AbstractJpaConfiguration {
 
     @Bean @Scope("prototype") public DomainClassesBuilder domainClassesBuilder() {
         return new DomainClasses.Builder();
+    }
+
+    @Bean @Scope("singleton") public JpaRepositoryFactory jpaRepositoryFactory() {
+        return jpaRepositoryFactory(entityManagerFactory(), domainClasses());
+    }
+    
+    public JpaRepositoryFactory jpaRepositoryFactory(
+            EntityManagerFactory emf, DomainClasses domainClasses) {
+        return new JpaRepositoryFactoryImpl(emf, domainClasses);
     }
     
     @Bean @Scope("singleton") public EntityRepositoryFactory entityRepositoryFactory() {

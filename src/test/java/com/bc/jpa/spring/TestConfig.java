@@ -7,9 +7,12 @@ import com.bc.jpa.dao.JpaObjectFactoryBase;
 import com.bc.jpa.dao.sql.MySQLDateTimePatterns;
 import com.bc.jpa.spring.repository.EntityRepository;
 import com.bc.jpa.spring.repository.EntityRepositoryImpl;
+import com.bc.jpa.spring.repository.JpaRepositoryFactory;
+import com.bc.jpa.spring.repository.JpaRepositoryFactoryImpl;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
  * @author hp
@@ -20,6 +23,21 @@ public class TestConfig {
 
     private static final EntityManagerFactory emf =
         Persistence.createEntityManagerFactory("bcjpaspring_persistence_unit");
+    
+    private static final JpaRepositoryFactory repoFactory =
+            new JpaRepositoryFactoryImpl(emf, (cls) -> true);
+    
+    public EntityManagerFactory getEntityManagerFactory() {
+        return emf;
+    }
+    
+    public JpaRepositoryFactory getJpaRepositoryFactory() {
+        return repoFactory;
+    }
+
+    public <E> JpaRepository<E, Object> getJpaRepo(Class<E> entityType){
+        return repoFactory.forEntity(entityType);
+    }
     
     public <E> EntityRepository<E> getEntityRepo(Class<E> entityType){
         return this.getEntityRepo(emf, entityType);

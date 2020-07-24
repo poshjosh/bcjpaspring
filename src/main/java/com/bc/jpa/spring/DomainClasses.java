@@ -10,4 +10,10 @@ import java.util.function.Supplier;
 public interface DomainClasses extends Supplier<Set<Class>>, Predicate<Class>{ 
 
     class Builder extends DomainClassesBuilder{ }
+
+    @Override
+    Set<Class> get();
+
+    @Override
+    boolean test(Class t);
 }

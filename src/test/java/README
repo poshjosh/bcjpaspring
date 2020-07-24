@@ -1,0 +1,268 @@
+Followed this https://www.baeldung.com/spring-jpa-test-in-memory-database
+to test JpaRepository via springboot rather than use Persistence.createEntityManagerFactory,
+did not work. Will try again later or revert
+
+
+    /**
+     * Test of search method, of class EntityRepository.
+     */
+    @Test
+    public void testSearch() {
+        System.out.println("search");
+        String query = "";
+        EntityRepository instance = new EntityRepositoryImpl();
+        List expResult = null;
+        List result = instance.search(query);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of exists method, of class EntityRepository.
+     */
+    @Test
+    public void testExists() {
+        System.out.println("exists");
+        Object id = null;
+        EntityRepository instance = new EntityRepositoryImpl();
+        boolean expResult = false;
+        boolean result = instance.exists(id);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of existsBy method, of class EntityRepository.
+     */
+    @Test
+    public void testExistsBy() {
+        System.out.println("existsBy");
+        String name = "";
+        Object value = null;
+        EntityRepository instance = new EntityRepositoryImpl();
+        boolean expResult = false;
+        boolean result = instance.existsBy(name, value);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of findAllBy method, of class EntityRepository.
+     */
+    @Test
+    public void testFindAllBy_Attribute_Object() {
+        System.out.println("findAllBy");
+        Attribute key = null;
+        Object value = null;
+        EntityRepository instance = new EntityRepositoryImpl();
+        List expResult = null;
+        List result = instance.findAllBy(key, value);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of findAllBy method, of class EntityRepository.
+     */
+    @Test
+    public void testFindAllBy_String_Object() {
+        System.out.println("findAllBy");
+        String key = "";
+        Object value = null;
+        EntityRepository instance = new EntityRepositoryImpl();
+        List expResult = null;
+        List result = instance.findAllBy(key, value);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of findAllBy method, of class EntityRepository.
+     */
+    @Test
+    public void testFindAllBy_4args() {
+        System.out.println("findAllBy");
+        String key = "";
+        Object value = null;
+        int offset = 0;
+        int limit = 0;
+        EntityRepository instance = new EntityRepositoryImpl();
+        List expResult = null;
+        List result = instance.findAllBy(key, value, offset, limit);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of findSingleBy method, of class EntityRepository.
+     */
+    @Test
+    public void testFindSingleBy_3args_1() {
+        System.out.println("findSingleBy");
+        Attribute key = null;
+        Object value = null;
+        Object outputIfNone = null;
+        EntityRepository instance = new EntityRepositoryImpl();
+        Object expResult = null;
+        Object result = instance.findSingleBy(key, value, outputIfNone);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of findSingleBy method, of class EntityRepository.
+     */
+    @Test
+    public void testFindSingleBy_3args_2() {
+        System.out.println("findSingleBy");
+        String key = "";
+        Object value = null;
+        Object outputIfNone = null;
+        EntityRepository instance = new EntityRepositoryImpl();
+        Object expResult = null;
+        Object result = instance.findSingleBy(key, value, outputIfNone);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of findSingleBy method, of class EntityRepository.
+     */
+    @Test
+    public void testFindSingleBy_Attribute_Object() {
+        System.out.println("findSingleBy");
+        Attribute key = null;
+        Object value = null;
+        EntityRepository instance = new EntityRepositoryImpl();
+        Object expResult = null;
+        Object result = instance.findSingleBy(key, value);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of findSingleBy method, of class EntityRepository.
+     */
+    @Test
+    public void testFindSingleBy_String_Object() {
+        System.out.println("findSingleBy");
+        String key = "";
+        Object value = null;
+        EntityRepository instance = new EntityRepositoryImpl();
+        Object expResult = null;
+        Object result = instance.findSingleBy(key, value);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of findAll method, of class EntityRepository.
+     */
+    @Test
+    public void testFindAll_0args() {
+        System.out.println("findAll");
+        EntityRepository instance = new EntityRepositoryImpl();
+        List expResult = null;
+        List result = instance.findAll();
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of findAll method, of class EntityRepository.
+     */
+    @Test
+    public void testFindAll_int_int() {
+        System.out.println("findAll");
+        int offset = 0;
+        int limit = 0;
+        EntityRepository instance = new EntityRepositoryImpl();
+        List expResult = null;
+        List result = instance.findAll(offset, limit);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of find method, of class EntityRepository.
+     */
+    @Test
+    public void testFind() {
+        System.out.println("find");
+        Object id = null;
+        EntityRepository instance = new EntityRepositoryImpl();
+        Object expResult = null;
+        Object result = instance.find(id);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of findOrDefault method, of class EntityRepository.
+     */
+    @Test
+    public void testFindOrDefault() {
+        System.out.println("findOrDefault");
+        Object id = null;
+        Object resultIfNone = null;
+        EntityRepository instance = new EntityRepositoryImpl();
+        Object expResult = null;
+        Object result = instance.findOrDefault(id, resultIfNone);
+        assertEquals(expResult, result);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of deleteById method, of class EntityRepository.
+     */
+    @Test
+    public void testDeleteById() {
+        System.out.println("deleteById");
+        final Object id = this.getId();
+        final EntityRepository instance = this.getInstance(this.getEntityType());
+        instance.deleteById(id);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of deleteManagedEntity method, of class EntityRepository.
+     */
+    @Test
+    public void testDeleteManagedEntity() {
+        System.out.println("deleteManagedEntity");
+        final Object entity = this.getEntity();
+        final EntityRepository instance = this.getInstance(entity.getClass());
+        instance.deleteManagedEntity(entity);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+
+    /**
+     * Test of update method, of class EntityRepository.
+     */
+    @Test
+    public void testUpdate() {
+        System.out.println("update");
+        final Object entity = this.getEntity();
+        final EntityRepository instance = this.getInstance(entity.getClass());
+        instance.update(entity);
+        // TODO review the generated test code and remove the default call to fail.
+        fail("The test case is a prototype.");
+    }
+    
+

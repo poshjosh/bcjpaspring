@@ -57,7 +57,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
         this.jpaObjectFactory = Objects.requireNonNull(jpa);
         this.entityType = Objects.requireNonNull(entityType);
         this.metaDataAccess = Objects.requireNonNull(mda);
-        LOG.debug("Entity type: {}", entityType);
+        LOG.trace("Entity type: {}", entityType);
     }
 
     protected void preCreate(E entity){ }
