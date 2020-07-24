@@ -19,6 +19,7 @@ package com.bc.jpa.spring;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -37,25 +38,13 @@ public class TypeFromNameResolverUsingClassNames extends AbstractTypeFromNameRes
     private final Collection<Class> classes;
 
     public TypeFromNameResolverUsingClassNames(Collection<String> classNames) {
-        LOG.trace("Class names: {0}", classNames);
-        final List<Class> tmp = new ArrayList(classNames.size());
-        for(String className : classNames) {
-            try{
-                final Class cls = Class.forName(className);
-                if( ! tmp.contains(cls)) {
-                    tmp.add(cls);
-                }
-            }catch(ClassNotFoundException e) {
-                LOG.warn("Exception loading class: " + className, e);
-            }
-        }
-        this.classes = Collections.unmodifiableList(tmp);
+        this.classes = Collections.unmodifiableList(getUniqueClasses(classNames));
     }
     
     public TypeFromNameResolverUsingClassNames(Set<Class> classes) {
-        this.classes = Collections.unmodifiableSet(classes);
+        this.classes = Collections.unmodifiableList(getUniqueClasses(classes));
     }
-    
+
     @Override
     public Class getType(String entityName) {
 
@@ -90,7 +79,7 @@ public class TypeFromNameResolverUsingClassNames extends AbstractTypeFromNameRes
                 .filter(filter)
                 .collect(Collectors.toSet());
         
-        LOG.debug("For name: {}, found matching classs: {}", entityName, found);
+        LOG.trace("For name: {}, found matching classs: {}", entityName, found);
         
         final Class type;
         if(found.isEmpty()) {
@@ -103,5 +92,52 @@ public class TypeFromNameResolverUsingClassNames extends AbstractTypeFromNameRes
         }
         
         return type == null ? resultIfNone : type;
+    }
+
+    /**
+     * @param classes
+     * @return A set of unique classes, with distinction based on class name
+     * @see #getUniqueClasses(java.util.Set) 
+     */
+    private List<Class> getUniqueClasses(Collection<String> classNames) {
+        classNames = classNames instanceof Set ? (Set<String>)classNames : new HashSet(classNames);
+        final List<Class> list = new ArrayList(classNames.size());
+        for(String className : classNames) {
+            try{
+                final Class cls = Class.forName(className);
+                if( ! list.contains(cls)) {
+                    list.add(cls);
+                }
+            }catch(ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        LOG.trace(" Input: {}\nOutput: {}", classNames, list);
+        return list;
+    }
+    
+    /**
+     * Create and populate a unique set of Classes based on class names.
+     * 
+     * Two classes may have the same class name but not be equal. This is 
+     * because, the <code>Class</code> class override's neither the equals or 
+     * hashcode methods of the <code>Object</code> class.
+     * 
+     * This method considers 2 classes equal if their class names are equal
+     * 
+     * @param classes
+     * @return A set of unique classes, with distinction based on class name
+     */
+    private List<Class> getUniqueClasses(Set<Class> classes) {
+        Set<String> added = new HashSet<>();
+        List<Class> unique = new ArrayList<>(classes.size());
+        for(Class cls : classes) {
+            String className = cls.getName();
+            if(added.add(className)) {
+                unique.add(cls);
+            }
+        }
+        LOG.trace(" Input: {}\nOutput: {}", classes, unique);
+        return unique;
     }
 }
