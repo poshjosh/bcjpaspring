@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.persistence.EntityManagerFactory;
 
 /**
@@ -100,14 +101,16 @@ public class DomainClassesBuilder{
     private static class DomainClassesImpl implements DomainClasses{
 
         private final Set<Class> classes;
+        private final Set<String> classNames;
 
         public DomainClassesImpl(Set<Class> classes) {
             this.classes = Objects.requireNonNull(classes);
+            this.classNames = classes.stream().map(Class::getName).collect(Collectors.toSet());
         }
 
         @Override
         public boolean test(Class type) {
-            return this.get().contains(type);
+            return classNames.contains(type.getName());
         }
 
         @Override
