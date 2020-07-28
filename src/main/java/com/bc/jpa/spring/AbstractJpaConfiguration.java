@@ -37,9 +37,27 @@ import org.springframework.context.annotation.Scope;
  */
 public abstract class AbstractJpaConfiguration {
     
+    /**
+     * This is a managed instance of the class. 
+     * 
+     * This sub class is necessary because closing an EntityManagerFactory 
+     * managed, say by Hibernate in a springframework environment could lead
+     * to exception. Hence this sub class does not close the 
+     * EntityManagerFactory when the close method is called
+     */
+    private static class ManagedJpaObjectFactory extends JpaObjectFactoryBase{
+        public ManagedJpaObjectFactory(EntityManagerFactory emf, SQLDateTimePatterns dateTimePatterns) {
+            super(emf, dateTimePatterns);
+        }
+        @Override
+        public void close() {
+//                super.close();
+        }
+    }
+    
     protected AbstractJpaConfiguration() { }
 
-    public abstract EntityManagerFactory entityManagerFactory();
+    protected abstract EntityManagerFactory entityManagerFactory();
     
     /**
      * Use this to add additional packages to search for entity classes.
@@ -48,20 +66,20 @@ public abstract class AbstractJpaConfiguration {
      * the <tt>META-INF/persistence.xml</tt> file.
      * @return 
      */
-    public String [] getAdditionalEntityPackageNames() {
+    protected String [] getAdditionalEntityPackageNames() {
         return new String[0];
     }
 
-    @Bean @Scope("prototype") public TypeFromNameResolver typeFromNameResolver() {
+    @Bean public TypeFromNameResolver typeFromNameResolver() {
         final Set<Class> classes = this.domainClasses().get();
         return this.typeFromNameResolver(classes);
     }
     
-    public TypeFromNameResolver typeFromNameResolver(Set<Class> classes) {
+    protected TypeFromNameResolver typeFromNameResolver(Set<Class> classes) {
         return new TypeFromNameResolverUsingClassNames(classes);
     }
 
-    @Bean @Scope("prototype") public DomainClasses domainClasses() {
+    @Bean public DomainClasses domainClasses() {
         return this.domainClassesBuilder()
                 .reset()
                 .addFrom(this.entityManagerFactory())
@@ -70,7 +88,7 @@ public abstract class AbstractJpaConfiguration {
                 .build();
     }
 
-    @Bean @Scope("prototype") public DomainClassesBuilder domainClassesBuilder() {
+    @Bean public DomainClassesBuilder domainClassesBuilder() {
         return new DomainClasses.Builder();
     }
 
@@ -78,7 +96,7 @@ public abstract class AbstractJpaConfiguration {
         return jpaRepositoryFactory(entityManagerFactory(), domainClasses());
     }
     
-    public JpaRepositoryFactory jpaRepositoryFactory(
+    protected JpaRepositoryFactory jpaRepositoryFactory(
             EntityManagerFactory emf, DomainClasses domainClasses) {
         return new JpaRepositoryFactoryImpl(emf, domainClasses);
     }
@@ -88,7 +106,7 @@ public abstract class AbstractJpaConfiguration {
                 this.jpaObjectFactory(), this.metaDataAccess(), this.domainClasses());
     }
     
-    public EntityRepositoryFactory entityRepositoryFactory(
+    protected EntityRepositoryFactory entityRepositoryFactory(
             JpaObjectFactory jpa, MetaDataAccess meta, DomainClasses domainClasses) {
         return new EntityRepositoryFactoryImpl(jpa, meta, domainClasses);
     }
@@ -104,8 +122,7 @@ public abstract class AbstractJpaConfiguration {
     }
     
     @Bean @Scope("singleton") public JpaObjectFactory jpaObjectFactory() {
-        return new JpaObjectFactoryBase(
-                this.entityManagerFactory(), this.sqlDateTimePatterns());
+        return new ManagedJpaObjectFactory(entityManagerFactory(), sqlDateTimePatterns());
     }
     
     @Bean @Scope("prototype") public SQLDateTimePatterns sqlDateTimePatterns() {
