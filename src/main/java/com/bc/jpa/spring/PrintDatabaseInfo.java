@@ -86,9 +86,12 @@ public class PrintDatabaseInfo implements CommandLineRunner{
         final StringBuilder builder = new StringBuilder();
         for(Class cls : classes) {
             final EntityRepository repo = repoFactory.forEntity(cls);
-            final long count = repo.count();
-            builder.append('\n').append('\n').append(cls.getSimpleName())
-                    .append(" has ").append(count).append(" records");
+            
+// @TODO issue#1 count now throws NullPointerException
+//
+//            final long count = repo.count();
+//            builder.append('\n').append('\n').append(cls.getSimpleName())
+//                    .append(" has ").append(count).append(" records");
             if(LOG.isTraceEnabled()) {
                 final List entities = repo.findAll(0, 1000);
                 for(Object e : entities) {

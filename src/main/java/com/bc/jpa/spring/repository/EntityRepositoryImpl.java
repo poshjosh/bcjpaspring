@@ -315,11 +315,12 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
             LOG.debug("Entity: {}, table: {}, columns: {}", 
                     entityType.getName(), this.tableName, this.columnNames);
 
-            this.primaryColumnName = columnNames.get(primaryColumnIndex);
+            this.primaryColumnName = columnNames.isEmpty() ? null : columnNames.get(primaryColumnIndex);
             LOG.trace("Primary column name: {}", this.primaryColumnName);
 
-            final int idType = mda.fetchColumnDataTypes(tableName)[primaryColumnIndex];
-            this.primaryColumnType = SQLUtils.getClass(idType, Object.class);
+            final int dataTypes [] = mda.fetchColumnDataTypes(tableName);
+            final int idType = dataTypes.length == 0 ? -1 : dataTypes[primaryColumnIndex];
+            this.primaryColumnType = idType == -1 ? null : SQLUtils.getClass(idType, Object.class);
             LOG.trace("Primary column type: {}", this.primaryColumnType);
         }
 
