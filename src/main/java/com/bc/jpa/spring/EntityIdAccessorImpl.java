@@ -1,5 +1,6 @@
 package com.bc.jpa.spring;
 
+import com.bc.jpa.spring.util.JpaUtil;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnitUtil;
 import javax.persistence.metamodel.Metamodel;

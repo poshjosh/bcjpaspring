@@ -15,8 +15,6 @@
  */
 package com.bc.jpa.spring;
 
-import com.bc.reflection.ReflectionUtil;
-
 /**
  * @author Chinomso Bassey Ikwuagwu on Apr 6, 2019 4:57:45 PM
  */

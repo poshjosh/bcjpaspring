@@ -1,7 +1,7 @@
 package com.bc.jpa.spring.repository;
 
 import com.bc.jpa.dao.JpaObjectFactory;
-import com.bc.jpa.spring.JpaUtil;
+import com.bc.jpa.spring.util.JpaUtil;
 import java.io.Serializable;
 import java.util.Objects;
 import javax.persistence.EntityManager;

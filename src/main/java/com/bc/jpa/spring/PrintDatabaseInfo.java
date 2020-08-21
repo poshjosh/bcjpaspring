@@ -3,6 +3,7 @@ package com.bc.jpa.spring;
 import com.bc.db.meta.access.MetaDataAccess;
 import com.bc.jpa.spring.repository.EntityRepository;
 import com.bc.jpa.spring.repository.EntityRepositoryFactory;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -79,26 +80,33 @@ public class PrintDatabaseInfo implements CommandLineRunner{
         final MetaDataAccess mda = context.getBean(MetaDataAccess.class);
         new com.bc.jpa.spring.PrintDatabaseTablesAndColumns(mda).run();
         
-        System.out.println();
-        LOG.debug("Printing database table row counts");
-        final EntityRepositoryFactory repoFactory = context
-                .getBean(EntityRepositoryFactory.class);
         final StringBuilder builder = new StringBuilder();
-        for(Class cls : classes) {
-            final EntityRepository repo = repoFactory.forEntity(cls);
+        if(LOG.isTraceEnabled()) {
             
-// @TODO issue#1 count now throws NullPointerException
-//
-//            final long count = repo.count();
-//            builder.append('\n').append('\n').append(cls.getSimpleName())
-//                    .append(" has ").append(count).append(" records");
-            if(LOG.isTraceEnabled()) {
-                final List entities = repo.findAll(0, 1000);
-                for(Object e : entities) {
-                    System.out.println(e);
+            System.out.println();
+            LOG.debug("Printing database table row counts");
+            final EntityRepositoryFactory repoFactory = context
+                    .getBean(EntityRepositoryFactory.class);
+            
+            for(Class cls : classes) {
+                final EntityRepository repo = repoFactory.forEntity(cls);
+
+    // @TODO issue#1 count now throws NullPointerException
+    //
+    //            final long count = repo.count();
+    //            builder.append('\n').append('\n').append(cls.getSimpleName())
+    //                    .append(" has ").append(count).append(" records");
+                if( ! cls.isEnum()) {
+
+                    final List entities = repo.findAll(0, 1000);
+                    for(Object e : entities) {
+                        System.out.println(e);
+                    }
+                }else{
+                    System.out.println(cls.getName() + "{" + Arrays.asList(cls.getEnumConstants()) + "}");
                 }
+
             }
-            
         }
         LOG.debug(builder.toString());
     }

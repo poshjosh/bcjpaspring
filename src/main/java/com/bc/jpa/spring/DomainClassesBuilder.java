@@ -1,7 +1,7 @@
 package com.bc.jpa.spring;
 
 import com.bc.jpa.dao.functions.GetEntityClasses;
-import com.bc.reflection.function.FindClassesInPackage;
+import com.bc.jpa.spring.util.FindClassesInPackage;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -25,7 +25,7 @@ public class DomainClassesBuilder{
     
     private final Function<EntityManagerFactory, Set<Class>> getEntityClasses;
     private final ClassesFromPersistenceXmlFileSupplier getClassesFromPersistenceXmlFile;
-    private final Function<String, List<Class>> findClassesInPackage;
+    private final Function<String, List<Class<?>>> findClassesInPackage;
 
     public DomainClassesBuilder() {
         this(
@@ -37,7 +37,7 @@ public class DomainClassesBuilder{
     public DomainClassesBuilder(
             Function<EntityManagerFactory, Set<Class>> getEntityClasses, 
             ClassesFromPersistenceXmlFileSupplier getClassesFromPersistenceXmlFile, 
-            Function<String, List<Class>> findClassesInPackage) {
+            Function<String, List<Class<?>>> findClassesInPackage) {
         this.getEntityClasses = Objects.requireNonNull(getEntityClasses);
         this.getClassesFromPersistenceXmlFile = 
                 Objects.requireNonNull(getClassesFromPersistenceXmlFile);
@@ -84,7 +84,8 @@ public class DomainClassesBuilder{
     public DomainClassesBuilder addFromPackages(String... packageNames) {
         if(packageNames != null) {
             for(String packageName : packageNames) {
-                this.add(this.findClassesInPackage.apply(packageName));
+                List<Class<?>> found = this.findClassesInPackage.apply(packageName);
+                this.add(Collections.unmodifiableList(found));
             }
         }
         return this;

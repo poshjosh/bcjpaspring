@@ -18,7 +18,7 @@ package com.bc.jpa.spring.repository;
 
 import com.bc.db.meta.access.MetaDataAccess;
 import com.bc.jpa.dao.JpaObjectFactory;
-import com.bc.jpa.spring.JpaUtil;
+import com.bc.jpa.spring.util.JpaUtil;
 import java.util.Objects;
 import java.util.function.Predicate;
 import javax.persistence.EntityManagerFactory;
