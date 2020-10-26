@@ -110,10 +110,13 @@ public abstract class AbstractJpaConfiguration {
             JpaObjectFactory jpa, MetaDataAccess meta, DomainClasses domainClasses) {
         return new EntityRepositoryFactoryImpl(jpa, meta, domainClasses);
     }
+    
+    @Bean @Scope("prototype") public EntityIdAccessor entityIdAccessor() {
+        return new EntityIdAccessorImpl(this.entityManagerFactory());
+    }
 
     @Bean @Scope("prototype") public MetaDataAccess metaDataAccess() {
-        return new MetaDataAccessImpl(
-                this.entityManagerFactory(), this.getConnectionFromEntityManager());
+        return new MetaDataAccessImpl(this.entityManagerFactory(), this.getConnectionFromEntityManager());
     }
 
     @Bean @Scope("prototype") public GetConnectionFromEntityManager 

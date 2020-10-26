@@ -12,6 +12,34 @@ public class JpaUtil {
     
     private JpaUtil() { }
     
+    public static Object convertToType(Object candidate, Class targetType) {
+        final Object result;
+        if(targetType.equals(Short.class)) {
+            if(candidate instanceof Short) {
+                result = (Short)candidate;
+            }else{
+                result = Short.parseShort(candidate.toString());
+            }
+        }else if(targetType.equals(Integer.class)) {
+            if(candidate instanceof Integer) {
+                result = (Integer)candidate;
+            }else{
+                result = Integer.parseInt(candidate.toString());
+            }
+        }else if(targetType.equals(Long.class)) {
+            if(candidate instanceof Long) {
+                result = (Long)candidate;
+            }else{
+                result = Long.parseLong(candidate.toString());
+            }
+        }else if(targetType.equals(String.class)) {
+            result = candidate.toString();
+        }else{
+            result = candidate;
+        }
+        return result;
+    }
+    
     /**
      * This method formats delegates of classes passed around by some 
      * Persistence APIs to the actual class representing the domain type. 

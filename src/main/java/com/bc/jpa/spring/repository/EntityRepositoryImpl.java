@@ -24,9 +24,9 @@ import com.bc.jpa.dao.Update;
 import com.bc.jpa.dao.functions.GetColumnNames;
 import com.bc.jpa.dao.functions.GetTableName;
 import com.bc.jpa.dao.sql.SQLUtils;
-import com.bc.jpa.spring.ConvertToType;
 import com.bc.jpa.spring.EntityIdAccessor;
 import com.bc.jpa.spring.EntityIdAccessorImpl;
+import com.bc.jpa.spring.util.JpaUtil;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
@@ -255,7 +255,7 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
     
     public Object convertToIdTypeIfNeed(Object id) {
         if( ! this.getPrimaryColumnType().isAssignableFrom(id.getClass())) {
-            id = this.getConvertToType().convert(id);
+            id = JpaUtil.convertToType(id, this.getPrimaryColumnType());
         }
         return id;
     }
@@ -274,14 +274,6 @@ public class EntityRepositoryImpl<E> implements EntityRepository<E> {
             _eia = new EntityIdAccessorImpl(this.getEntityManagerFactory());
         }
         return _eia;
-    }
-    
-    private ConvertToType _c2t;
-    private ConvertToType getConvertToType() {
-        if(_c2t == null) {
-            _c2t = new ConvertToType(getMetaData().getPrimaryColumnType());
-        }
-        return _c2t;
     }
 
     public EntityManagerFactory getEntityManagerFactory() {
