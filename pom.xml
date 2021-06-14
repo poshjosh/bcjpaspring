@@ -6,6 +6,7 @@
         <groupId>com.looseboxes</groupId>
         <artifactId>parent</artifactId>
         <version>1.0-SNAPSHOT</version>
+        <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>bcjpaspring</artifactId>
